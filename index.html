@@ -31,7 +31,11 @@
   <body>
     <div class="sidebar">
       <img src="logo.png" alt="Logo" class="logo" />
-
+      <div class="sorting">
+        <button class="sort" data-type="distance">Distance</button>
+        <button class="sort" data-type="duration">Duration</button>
+        <button class="sort" data-type="type">Type</button>
+      </div>
       <ul class="workouts">
         <form class="form hidden">
           <div class="form__row">
@@ -68,8 +72,8 @@
           </div>
           <button class="form__btn">OK</button>
         </form>
-
-        <!-- <li class="workout workout--running" data-id="1234567890">
+        <!--
+        <li class="workout workout--running" data-id="1234567890">
           <h2 class="workout__title">Running on April 14</h2>
           <div class="workout__details">
             <span class="workout__icon">🏃‍♂️</span>
@@ -90,6 +94,10 @@
             <span class="workout__icon">🦶🏼</span>
             <span class="workout__value">178</span>
             <span class="workout__unit">spm</span>
+          </div>
+          <div class="workout__buttons">
+            <button class="edit__button new--button">✍️ Edit</button>
+            <button class="delete__button new--button">🗑️ Delete</button>
           </div>
         </li>
 
@@ -115,21 +123,14 @@
             <span class="workout__value">223</span>
             <span class="workout__unit">m</span>
           </div>
-        </li> -->
+          <div class="workout__buttons workout__details">
+            <button class="edit__button new--button">✍️ Edit</button>
+            <button class="delete__button new--button">🗑️ Delete</button>
+          </div>
+        </li>
+        -->
       </ul>
-      <button class="delete__all--workouts">Delete all workouts</button>
-      <!--
-      <p class="copyright">
-        &copy; Copyright by
-        <a
-          class="twitter-link"
-          target="_blank"
-          href="https://twitter.com/jonasschmedtman"
-          >Jonas Schmedtmann</a
-        >. Use for learning or your portfolio. Don't use to teach. Don't claim
-        as your own.
-      </p>
-      -->
+      <button class="delete__all--workouts">❌ Delete all workouts</button>
     </div>
 
     <div id="map"></div>

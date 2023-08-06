@@ -12,6 +12,8 @@ const inputCadence = document.querySelector('.form__input--cadence');
 const inputElevation = document.querySelector('.form__input--elevation');
 const delAllWork = document.querySelector('.delete__all--workouts');
 
+const sort = document.querySelectorAll('.sort');
+
 class Workout {
   date = new Date();
   id = (Date.now() + '').slice(-10);
@@ -89,6 +91,9 @@ class App {
     containerWorkouts.addEventListener('click', this._moveToPopup.bind(this));
     delAllWork.addEventListener('click', this._delAllWorkouts.bind(this));
 
+    sort.forEach(option => {
+      option.addEventListener('click', this._sort.bind(this));
+    });
     // Get data from local storage
     this._getLocalStorage();
   }
@@ -211,9 +216,7 @@ class App {
   _renderWorkout(workout) {
     let html = `
     <li class="workout workout--${workout.type}" data-id="${workout.id}">
-          <h2 class="workout__title">${
-            workout.description
-          } <button class="edit__button">Edit</button> <button class="delete__button">Delete</button></h2>
+          <h2 class="workout__title">${workout.description}</h2>
           <div class="workout__details">
             <span class="workout__icon">${
               workout.type === 'running' ? '🏃‍♂️' : '🚴‍♀️'
@@ -236,7 +239,12 @@ class App {
         <span class="workout__icon">🦶🏼</span>
         <span class="workout__value">${workout.cadence}</span>
         <span class="workout__unit">spm</span>
-      </div>`;
+      </div>
+      
+        <button class="edit__button new--button">✍️ Edit</button>
+        <button class="delete__button new--button">🗑️ Delete</button>
+      
+    `;
     }
     if (workout.type === 'cycling') {
       html += `<div class="workout__details">
@@ -248,10 +256,17 @@ class App {
       <span class="workout__icon">⛰</span>
       <span class="workout__value">${workout.elevationGain}</span>
       <span class="workout__unit">m</span>
-    </div>`;
+    </div>
+    
+    
+      <button class="edit__button new--button">✍️ Edit</button>
+      <button class="delete__button new--button">🗑️ Delete</button>
+    
+    `;
     }
 
     form.insertAdjacentHTML('afterend', html);
+
     // Listen for Edit or Delete
     document
       .querySelector('.edit__button')
@@ -427,6 +442,38 @@ class App {
     );
     this._loadMap(positions2);
     this._setLocalStorage();
+  }
+
+  _sort(e) {
+    // console.log(e.srcElement.dataset.type);
+    const dataType = e.srcElement.dataset.type;
+
+    // Sort for type by string value
+    if (dataType === 'type') {
+      this.#workouts.sort((a, b) =>
+        a.type > b.type ? 1 : b.type > a.type ? -1 : 0
+      );
+    }
+
+    // Sort by duration or distance
+    this.#workouts.sort((a, b) => {
+      // console.log(`a.${ed}`);
+      a = eval(`a.${dataType}`);
+      b = eval(`b.${dataType}`);
+
+      return a - b;
+    });
+
+    // Hide all workouts
+    const allWorkouts = document.querySelectorAll('.workout');
+    allWorkouts.forEach(workoutHide => {
+      workoutHide.closest('.workout').classList.add('form__row--hidden');
+    });
+
+    // Show ordered workouts
+    this.#workouts.forEach(showWorkout => {
+      this._renderWorkout(showWorkout);
+    });
   }
   // Local storage stuff
   _setLocalStorage() {
