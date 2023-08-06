@@ -11,6 +11,7 @@ const inputDuration = document.querySelector('.form__input--duration');
 const inputCadence = document.querySelector('.form__input--cadence');
 const inputElevation = document.querySelector('.form__input--elevation');
 const delAllWork = document.querySelector('.delete__all--workouts');
+const error = document.querySelector('.error__message');
 
 const sort = document.querySelectorAll('.sort');
 
@@ -175,7 +176,9 @@ class App {
         !validInputs(distance, duration, cadence) ||
         !allPositive(distance, duration, cadence)
       ) {
-        return alert('Inputs have to be positive numbers1');
+        error.classList.remove('form__row--hidden');
+        error.innerHTML = 'Error! check your inputs again.';
+        return;
       }
       workout = new Running([lat, lng], distance, duration, cadence);
     }
@@ -186,10 +189,13 @@ class App {
         !validInputs(distance, duration, elevation) ||
         !allPositive(distance, duration, elevation)
       ) {
-        return alert('Inputs have to be positive numbers2');
+        error.classList.remove('form__row--hidden');
+        error.innerHTML = 'Error! check your inputs again.';
+        return;
       }
       workout = new Cycling([lat, lng], distance, duration, elevation);
     }
+    error.classList.add('form__row--hidden');
     this.#workouts.push(workout);
     this._renderWorkoutMarker(workout);
     this._renderWorkout(workout);

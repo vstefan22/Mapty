@@ -162,6 +162,17 @@ a:visited {
   border: 1px solid white;
   border-radius: 10px;
 }
+
+.error__message {
+  font-size: 16px;
+  background-color: red;
+  display: flex;
+  justify-content: center;
+  border-radius: 10px;
+  margin: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
 .form {
   background-color: var(--color-dark--2);
   border-radius: 5px;
