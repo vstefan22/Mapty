@@ -370,23 +370,36 @@ class App {
     form.myParam = getWorkoutId;
   }
 
-  // Delete workout - not finished
+  // Delete workout
   _deleteWorkout(e) {
     if (!this.#map) return;
     const delWorkoutId = e.target.closest('.workout').dataset.id;
+
+    // Find coordinates to pass to _loadMap function
+    const getCoords = this.#workouts[0].coords;
+    const positions = {
+      coords: { latitude: getCoords[0], longitude: getCoords[1] },
+    };
+
+    // Find workout user wants to delete
     const delWorkout = this.#workouts.find(function (work, i, arr) {
       console.log(work.id, delWorkoutId);
       if (work.id === delWorkoutId) {
+        // Remove workout from the array, hide workout from completed workouts
         arr.splice(i, 1);
+        e.target.closest('.workout').classList.add('form__row--hidden');
+
+        // Remove workout from the ocal storage
         localStorage.removeItem(i);
       }
     });
 
-    if (this.#workouts[0]) {
-      this._renderWorkoutMarker(this.#workouts[0]);
-    } else {
-    }
+    // Reload the map and update local storage
+    this.#map.remove();
+    this._loadMap(positions);
+    this._setLocalStorage();
   }
+
   // Local storage stuff
   _setLocalStorage() {
     localStorage.setItem('workouts', JSON.stringify(this.#workouts));
