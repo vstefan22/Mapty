@@ -10,6 +10,7 @@ const inputDistance = document.querySelector('.form__input--distance');
 const inputDuration = document.querySelector('.form__input--duration');
 const inputCadence = document.querySelector('.form__input--cadence');
 const inputElevation = document.querySelector('.form__input--elevation');
+const delAllWork = document.querySelector('.delete__all--workouts');
 
 class Workout {
   date = new Date();
@@ -86,6 +87,7 @@ class App {
     }
     inputType.addEventListener('change', this._toggleElevationField);
     containerWorkouts.addEventListener('click', this._moveToPopup.bind(this));
+    delAllWork.addEventListener('click', this._delAllWorkouts.bind(this));
 
     // Get data from local storage
     this._getLocalStorage();
@@ -104,7 +106,6 @@ class App {
   }
 
   _loadMap(position) {
-    console.log(position);
     const { latitude } = position.coords;
     const { longitude } = position.coords;
     this.#map = L.map('map').setView([latitude, longitude], this.#mapZoomLevel);
@@ -277,12 +278,15 @@ class App {
 
   // Callback function when data is edited submited
   _submitEdit(e) {
+    e.preventDefault();
+    console.log('once');
+    // console.log(this.#workouts);
     // Get passed value (workout ID)
     const workoutId = e.srcElement.myParam;
 
     // Find workout in list of workouts
     const findWorkout = this.#workouts.find(work => work.id === workoutId);
-
+    // console.log(findWorkout);
     // Get values
     const typeUpdate = inputType.value;
     const distanceUpdate = +inputDistance.value;
@@ -361,16 +365,18 @@ class App {
 
     // Submit data
     // If new workout window is opened don't trigger edit function
-
+    // once: true is used to remove event listener after it runs
     if (form.classList.contains('edit')) {
-      form.addEventListener('submit', this._submitEdit.bind(this));
+      form.addEventListener('submit', this._submitEdit.bind(this), {
+        once: true,
+      });
     }
 
     // Pass workout id to the function
     form.myParam = getWorkoutId;
   }
 
-  // Delete workout
+  // Delete one workout
   _deleteWorkout(e) {
     if (!this.#map) return;
     const delWorkoutId = e.target.closest('.workout').dataset.id;
@@ -383,7 +389,6 @@ class App {
 
     // Find workout user wants to delete
     const delWorkout = this.#workouts.find(function (work, i, arr) {
-      console.log(work.id, delWorkoutId);
       if (work.id === delWorkoutId) {
         // Remove workout from the array, hide workout from completed workouts
         arr.splice(i, 1);
@@ -400,6 +405,29 @@ class App {
     this._setLocalStorage();
   }
 
+  // Delete all workouts
+  _delAllWorkouts() {
+    // If there is no workouts in the list return
+    if (this.#workouts.length === 0) return;
+
+    // Get coordinates to pass to _loadMap function
+    const getCoords2 = this.#workouts[0].coords;
+    const positions2 = {
+      coords: { latitude: getCoords2[0], longitude: getCoords2[1] },
+    };
+
+    // Empty array
+    this.#workouts = [];
+
+    // Reload map, remove all workouts and reset local storage
+    this.#map.remove();
+    const allWorkouts = document.querySelectorAll('.workout');
+    allWorkouts.forEach(workoutHide =>
+      workoutHide.closest('.workout').classList.add('form__row--hidden')
+    );
+    this._loadMap(positions2);
+    this._setLocalStorage();
+  }
   // Local storage stuff
   _setLocalStorage() {
     localStorage.setItem('workouts', JSON.stringify(this.#workouts));
