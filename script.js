@@ -73,6 +73,7 @@ class Cycling extends Workout {
 }
 
 // ////////////////////////////////////////////////////
+let workout;
 class App {
   // private properties
   #map;
@@ -149,14 +150,29 @@ class App {
     inputElevation.closest('.form__row').classList.toggle('form__row--hidden');
     inputCadence.closest('.form__row').classList.toggle('form__row--hidden');
   }
-
-  _newWorkout(e) {
-    if (form.classList.contains('edit')) return;
+  _checkInput(type, distance, duration, thridValue) {
     const validInputs = (...inputs) =>
       inputs.every(inp => Number.isFinite(inp));
     const allPositive = (...inputs) => inputs.every(inp => inp > 0);
+    const showError = function () {
+      error.classList.remove('form__row--hidden');
+      error.innerHTML = 'Error! check your inputs again.';
+      return false;
+    };
+    type === 'running'
+      ? (thridValue = +inputCadence.value)
+      : (thridValue = +inputElevation.value);
 
-    // Display marker
+    if (
+      !validInputs(distance, duration, thridValue) ||
+      !allPositive(distance, duration, thridValue)
+    ) {
+      return showError();
+    }
+    return true;
+  }
+  _newWorkout(e) {
+    if (form.classList.contains('edit')) return;
     e.preventDefault();
 
     // get data from the input
@@ -167,32 +183,15 @@ class App {
     const { lat, lng } = this.#mapEvent.latlng;
 
     // get two different variables by descructuring array
-    let workout;
 
     if (type === 'running') {
       const cadence = +inputCadence.value;
-
-      if (
-        !validInputs(distance, duration, cadence) ||
-        !allPositive(distance, duration, cadence)
-      ) {
-        error.classList.remove('form__row--hidden');
-        error.innerHTML = 'Error! check your inputs again.';
-        return;
-      }
+      if (!this._checkInput(type, distance, duration, cadence)) return;
       workout = new Running([lat, lng], distance, duration, cadence);
     }
     if (type === 'cycling') {
       const elevation = +inputElevation.value;
-
-      if (
-        !validInputs(distance, duration, elevation) ||
-        !allPositive(distance, duration, elevation)
-      ) {
-        error.classList.remove('form__row--hidden');
-        error.innerHTML = 'Error! check your inputs again.';
-        return;
-      }
+      if (!this._checkInput(type, distance, duration, elevation)) return;
       workout = new Cycling([lat, lng], distance, duration, elevation);
     }
     error.classList.add('form__row--hidden');
@@ -300,15 +299,11 @@ class App {
   // Callback function when data is edited submited
   _submitEdit(e) {
     e.preventDefault();
-    console.log('once');
-    // console.log(this.#workouts);
-    // Get passed value (workout ID)
+
     const workoutId = e.srcElement.myParam;
 
-    // Find workout in list of workouts
     const findWorkout = this.#workouts.find(work => work.id === workoutId);
-    // console.log(findWorkout);
-    // Get values
+
     const typeUpdate = inputType.value;
     const distanceUpdate = +inputDistance.value;
     const durationUpdate = +inputDuration.value;
@@ -316,41 +311,49 @@ class App {
     // Depending on the input
     if (typeUpdate === 'running') {
       // Delete elevation gain from the object
+      const cadenceUpdate = +inputCadence.value;
+      if (
+        !this._checkInput(
+          typeUpdate,
+          distanceUpdate,
+          durationUpdate,
+          cadenceUpdate
+        )
+      )
+        return;
       delete findWorkout.elevationGain;
       delete findWorkout.speed;
 
-      // Put cadence
-      const cadenceUpdate = +inputCadence.value;
       findWorkout.cadence = cadenceUpdate;
 
-      // Calculate pace again
       findWorkout.pace = distanceUpdate / durationUpdate;
     } else if (typeUpdate === 'cycling') {
-      // Delete cadence from the object
+      const ElevationUpdate = +inputElevation.value;
+      if (
+        !this._checkInput(
+          typeUpdate,
+          distanceUpdate,
+          durationUpdate,
+          ElevationUpdate
+        )
+      )
+        return;
       delete findWorkout.cadence;
       delete findWorkout.pace;
-
-      // Put elevation gain
-      const ElevationUpdate = +inputElevation.value;
       findWorkout.elevationGain = ElevationUpdate;
-
-      // Calculate speed again
       findWorkout.speed = distanceUpdate / (durationUpdate / 60);
     }
 
-    // Update rest of the values
     findWorkout.distance = distanceUpdate;
     findWorkout.duration = durationUpdate;
     findWorkout.type = typeUpdate;
 
-    // Hide form and render updated workout
     this._hideForm();
     this._renderWorkout(findWorkout);
 
-    // Remove edit class to allow creation of new workouts
     form.classList.remove('edit');
+    error.classList.add('form__row--hidden');
 
-    // Update local storage
     this._setLocalStorage();
   }
 
@@ -359,11 +362,8 @@ class App {
     // Find target workout
     const getWorkoutId = e.target.closest('.workout').dataset.id;
     const getWorkout = this.#workouts.find(work => work.id === getWorkoutId);
-
-    // Hide workout
-    const workout = e.target
-      .closest('.workout')
-      .classList.add('form__row--hidden');
+    error.classList.add('form__row--hidden');
+    e.target.closest('.workout').classList.add('form__row--hidden');
 
     // Show form
     form.classList.remove('hidden');
@@ -384,74 +384,68 @@ class App {
       form.childNodes[9].classList.remove('form__row--hidden');
     }
 
-    // Submit data
     // If new workout window is opened don't trigger edit function
     // once: true is used to remove event listener after it runs
     if (form.classList.contains('edit')) {
-      form.addEventListener('submit', this._submitEdit.bind(this), {
-        once: true,
-      });
+      form.addEventListener('submit', this._submitEdit.bind(this));
     }
 
     // Pass workout id to the function
     form.myParam = getWorkoutId;
   }
-
-  // Delete one workout
-  _deleteWorkout(e) {
-    if (!this.#map) return;
-    const delWorkoutId = e.target.closest('.workout').dataset.id;
-
-    // Find coordinates to pass to _loadMap function
+  _udpateMap(getPosition) {
+    this.#map.remove();
+    this._loadMap(getPosition);
+    this._setLocalStorage();
+  }
+  _getCoords() {
     const getCoords = this.#workouts[0].coords;
     const positions = {
       coords: { latitude: getCoords[0], longitude: getCoords[1] },
     };
+    return positions;
+  }
+  _removeAllWorkouts() {
+    const allWorkouts = document.querySelectorAll('.workout');
+    allWorkouts.forEach(workoutHide =>
+      workoutHide.closest('.workout').classList.add('form__row--hidden')
+    );
+  }
+  // Delete one workout
+  _deleteWorkout(e) {
+    if (!this.#map) return;
+    const delWorkoutId = e.target.closest('.workout').dataset.id;
+    const positions = this._getCoords();
 
-    // Find workout user wants to delete
+    // Find and delete workout
     const delWorkout = this.#workouts.find(function (work, i, arr) {
       if (work.id === delWorkoutId) {
-        // Remove workout from the array, hide workout from completed workouts
         arr.splice(i, 1);
         e.target.closest('.workout').classList.add('form__row--hidden');
-
-        // Remove workout from the ocal storage
         localStorage.removeItem(i);
       }
     });
 
     // Reload the map and update local storage
-    this.#map.remove();
-    this._loadMap(positions);
-    this._setLocalStorage();
+    this._udpateMap(positions);
   }
 
   // Delete all workouts
   _delAllWorkouts() {
-    // If there is no workouts in the list return
+    error.classList.add('form__row--hidden');
     if (this.#workouts.length === 0) return;
 
-    // Get coordinates to pass to _loadMap function
-    const getCoords2 = this.#workouts[0].coords;
-    const positions2 = {
-      coords: { latitude: getCoords2[0], longitude: getCoords2[1] },
-    };
+    const positions = this._getCoords();
 
-    // Empty array
     this.#workouts = [];
 
     // Reload map, remove all workouts and reset local storage
-    this.#map.remove();
-    const allWorkouts = document.querySelectorAll('.workout');
-    allWorkouts.forEach(workoutHide =>
-      workoutHide.closest('.workout').classList.add('form__row--hidden')
-    );
-    this._loadMap(positions2);
-    this._setLocalStorage();
+    this._removeAllWorkouts();
+    this._udpateMap(positions);
   }
 
   _sort(e) {
-    // console.log(e.srcElement.dataset.type);
+    error.classList.add('form__row--hidden');
     const dataType = e.srcElement.dataset.type;
 
     // Sort for type by string value
@@ -463,7 +457,6 @@ class App {
 
     // Sort by duration or distance
     this.#workouts.sort((a, b) => {
-      // console.log(`a.${ed}`);
       a = eval(`a.${dataType}`);
       b = eval(`b.${dataType}`);
 
@@ -471,10 +464,7 @@ class App {
     });
 
     // Hide all workouts
-    const allWorkouts = document.querySelectorAll('.workout');
-    allWorkouts.forEach(workoutHide => {
-      workoutHide.closest('.workout').classList.add('form__row--hidden');
-    });
+    this._removeAllWorkouts();
 
     // Show ordered workouts
     this.#workouts.forEach(showWorkout => {
